@@ -14,13 +14,14 @@ List of augmenters:
     * RandomShear
 """
 
-import numpy as np
 import numbers
 import random
+
+import cv2
+import numpy as np
+import PIL
 import scipy
 import skimage
-import PIL
-import cv2
 
 
 class RandomRotate(object):
@@ -37,25 +38,26 @@ class RandomRotate(object):
     def __init__(self, degrees):
         if isinstance(degrees, numbers.Number):
             if degrees < 0:
-                raise ValueError('If degrees is a single number,'
-                                 'must be positive')
+                raise ValueError("If degrees is a single number," "must be positive")
             degrees = (-degrees, degrees)
         else:
             if len(degrees) != 2:
-                raise ValueError('If degrees is a sequence,'
-                                 'it must be of len 2.')
+                raise ValueError("If degrees is a sequence," "it must be of len 2.")
 
         self.degrees = degrees
 
     def __call__(self, clip):
         angle = random.uniform(self.degrees[0], self.degrees[1])
         if isinstance(clip[0], np.ndarray):
+            NotImplementedError("RandomRotate for np.ndarray does not work!!!")
             rotated = [skimage.transform.rotate(img, angle) for img in clip]
         elif isinstance(clip[0], PIL.Image.Image):
             rotated = [img.rotate(angle) for img in clip]
         else:
-            raise TypeError('Expected numpy.ndarray or PIL.Image' +
-                            'but got list of {0}'.format(type(clip[0])))
+            raise TypeError(
+                "Expected numpy.ndarray or PIL.Image"
+                + "but got list of {0}".format(type(clip[0]))
+            )
 
         return rotated
 
@@ -72,7 +74,7 @@ class RandomResize(object):
         ('nearest', 'lanczos', 'bilinear', 'bicubic' or 'cubic').
     """
 
-    def __init__(self, rate=0.0, interp='bilinear'):
+    def __init__(self, rate=0.0, interp="bilinear"):
         self.rate = rate
 
         self.interpolation = interp
@@ -89,36 +91,47 @@ class RandomResize(object):
         new_h = int(im_h * scaling_factor)
         new_size = (new_h, new_w)
         if isinstance(clip[0], np.ndarray):
-            return [scipy.misc.imresize(img, size=(new_h, new_w),interp=self.interpolation) for img in clip]
+            return [
+                scipy.misc.imresize(img, size=new_size, interp=self.interpolation)
+                for img in clip
+            ]
         elif isinstance(clip[0], PIL.Image.Image):
-            return [img.resize(size=(new_w, new_h), resample=self._get_PIL_interp(self.interpolation)) for img in clip]
+            return [
+                img.resize(
+                    size=(new_w, new_h),
+                    resample=self._get_PIL_interp(self.interpolation),
+                )
+                for img in clip
+            ]
         else:
-            raise TypeError('Expected numpy.ndarray or PIL.Image' +
-                            'but got list of {0}'.format(type(clip[0])))
+            raise TypeError(
+                "Expected numpy.ndarray or PIL.Image"
+                + "but got list of {0}".format(type(clip[0]))
+            )
 
     def _get_PIL_interp(self, interp):
-        if interp == 'nearest':
+        if interp == "nearest":
             return PIL.Image.NEAREST
-        elif interp == 'lanczos':
+        elif interp == "lanczos":
             return PIL.Image.LANCZOS
-        elif interp == 'bilinear':
+        elif interp == "bilinear":
             return PIL.Image.BILINEAR
-        elif interp == 'bicubic':
+        elif interp == "bicubic":
             return PIL.Image.BICUBIC
-        elif interp == 'cubic':
+        elif interp == "cubic":
             return PIL.Image.CUBIC
 
 
 class RandomTranslate(object):
     """
-      Shifting video in X and Y coordinates.
+    Shifting video in X and Y coordinates.
 
-        Args:
-            x (int) : Translate in x direction, selected
-            randomly from [-x, +x] pixels.
+      Args:
+          x (int) : Translate in x direction, selected
+          randomly from [-x, +x] pixels.
 
-            y (int) : Translate in y direction, selected
-            randomly from [-y, +y] pixels.
+          y (int) : Translate in y direction, selected
+          randomly from [-y, +y] pixels.
     """
 
     def __init__(self, x=0, y=0):
@@ -134,10 +147,15 @@ class RandomTranslate(object):
             transform_mat = np.float32([[1, 0, x_move], [0, 1, y_move]])
             return [cv2.warpAffine(img, transform_mat, (cols, rows)) for img in clip]
         elif isinstance(clip[0], PIL.Image.Image):
-            return [img.transform(img.size, PIL.Image.AFFINE, (1, 0, x_move, 0, 1, y_move)) for img in clip]
+            return [
+                img.transform(img.size, PIL.Image.AFFINE, (1, 0, x_move, 0, 1, y_move))
+                for img in clip
+            ]
         else:
-            raise TypeError('Expected numpy.ndarray or PIL.Image' +
-                            'but got list of {0}'.format(type(clip[0])))
+            raise TypeError(
+                "Expected numpy.ndarray or PIL.Image"
+                + "but got list of {0}".format(type(clip[0]))
+            )
 
 
 class RandomShear(object):
@@ -165,7 +183,14 @@ class RandomShear(object):
             transform_mat = np.float32([[1, x_shear, 0], [y_shear, 1, 0]])
             return [cv2.warpAffine(img, transform_mat, (cols, rows)) for img in clip]
         elif isinstance(clip[0], PIL.Image.Image):
-            return [img.transform(img.size, PIL.Image.AFFINE, (1, x_shear, 0, y_shear, 1, 0)) for img in clip]
+            return [
+                img.transform(
+                    img.size, PIL.Image.AFFINE, (1, x_shear, 0, y_shear, 1, 0)
+                )
+                for img in clip
+            ]
         else:
-            raise TypeError('Expected numpy.ndarray or PIL.Image' +
-                                'but got list of {0}'.format(type(clip[0])))
+            raise TypeError(
+                "Expected numpy.ndarray or PIL.Image"
+                + "but got list of {0}".format(type(clip[0]))
+            )
